@@ -1,4 +1,4 @@
-defmodule Membrane.AudioMixer.Support.RawAudioParser do
+defmodule Membrane.RawAudioParser do
   @moduledoc """
   This element is responsible for parsing audio in RawAudio format.
   """
@@ -49,11 +49,23 @@ defmodule Membrane.AudioMixer.Support.RawAudioParser do
     state =
       options
       |> Map.from_struct()
-      |> Map.put(:current_time, options.offset)
-      |> Map.put(:payload, <<>>)
+      |> Map.put(:next_pts, options.offset)
+      |> Map.put(:acc, <<>>)
 
     {[], state}
   end
+
+  @impl true
+  def handle_stream_format(
+        _pad,
+        %RemoteStream{},
+        _context,
+        %{stream_format: nil}
+      ),
+      do:
+        raise("""
+        You need to specify `stream_format` in options if `Membrane.RemoteStream` will be received on the `:input` pad
+        """)
 
   @impl true
   def handle_stream_format(
@@ -67,11 +79,12 @@ defmodule Membrane.AudioMixer.Support.RawAudioParser do
   @impl true
   def handle_stream_format(
         _pad,
-        RemoteStream,
+        %RemoteStream{},
         _context,
         %{stream_format: stream_format} = state
-      ),
-      do: {[stream_format: {:output, stream_format}], state}
+      ) do
+    {[stream_format: {:output, stream_format}], state}
+  end
 
   @impl true
   def handle_stream_format(
@@ -83,9 +96,11 @@ defmodule Membrane.AudioMixer.Support.RawAudioParser do
       do: {[stream_format: {:output, stream_format}], state}
 
   @impl true
-  def handle_stream_format(_pad, input_stream_format, _context, %{stream_format: stream_format}) do
-    raise "Stream format on input pad: #{input_stream_format} is different than the one passed in option: #{stream_format}"
-  end
+  def handle_stream_format(_pad, input_stream_format, _context, %{stream_format: stream_format}),
+    do:
+      raise(
+        "Stream format on input pad: #{inspect(input_stream_format)} is different than the one passed in option: #{inspect(stream_format)}"
+      )
 
   @impl true
   def handle_process(
@@ -94,41 +109,46 @@ defmodule Membrane.AudioMixer.Support.RawAudioParser do
         _context,
         %{stream_format: stream_format, overwrite_pts?: overwrite_pts?} = state
       ) do
-    payload = state.payload <> buffer.payload
+    payload = state.acc <> buffer.payload
     sample_size = RawAudio.sample_size(stream_format) * stream_format.channels
 
     parsed_payload_bytes = byte_size(payload) - rem(byte_size(payload), sample_size)
 
-    <<parsed_payload::binary-size(parsed_payload_bytes), rest::binary>> = payload
+    <<parsed_payload::binary-size(parsed_payload_bytes), acc::binary>> = payload
+    state = %{state | acc: acc}
 
-    parsed_buffer = %{buffer | payload: parsed_payload}
+    if parsed_payload == <<>> do
+      {[], state}
+    else
+      parsed_buffer = %Buffer{buffer | payload: parsed_payload}
 
-    {parsed_buffer, state} =
-      if overwrite_pts?, do: overwrite_pts(parsed_buffer, state), else: {parsed_buffer, state}
+      {parsed_buffer, state} =
+        if overwrite_pts?, do: overwrite_pts(parsed_buffer, state), else: {parsed_buffer, state}
 
-    {[buffer: {:output, parsed_buffer}], %{state | payload: rest}}
+      {[buffer: {:output, parsed_buffer}], state}
+    end
   end
 
   @impl true
-  def handle_end_of_stream(_pad, _context, %{payload: payload} = state) when payload == <<>>,
+  def handle_end_of_stream(_pad, _context, %{acc: <<>>} = state),
     do: {[end_of_stream: :output], state}
 
   @impl true
   def handle_end_of_stream(
         _pad,
         _context,
-        %{payload: payload, overwrite_pts?: overwrite_pts?} = state
+        %{acc: acc, overwrite_pts?: overwrite_pts?} = state
       ) do
-    buffer = %Buffer{payload: payload}
+    buffer = %Buffer{payload: acc}
     {buffer, state} = if overwrite_pts?, do: overwrite_pts(buffer, state), else: {buffer, state}
-    {[buffer: {:output, buffer}, end_of_stream: :output], %{state | payload: <<>>}}
+    {[buffer: {:output, buffer}, end_of_stream: :output], %{state | acc: <<>>}}
   end
 
   defp overwrite_pts(
          %{payload: payload} = buffer,
-         %{current_time: current_time, stream_format: stream_format} = state
+         %{next_pts: next_pts, stream_format: stream_format} = state
        ) do
     duration = RawAudio.bytes_to_time(byte_size(payload), stream_format)
-    {%{buffer | pts: current_time}, %{state | current_time: current_time + duration}}
+    {%{buffer | pts: next_pts}, %{state | next_pts: next_pts + duration}}
   end
 end

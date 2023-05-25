@@ -40,7 +40,8 @@ defmodule Membrane.RawAudioParser.Mixfile do
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false},
-      {:membrane_raw_audio_format, "~> 0.10.0"}
+      {:membrane_raw_audio_format, "~> 0.10.0"},
+      {:membrane_file_plugin, "~> 0.13.3", only: :test}
     ]
   end
 
@@ -63,7 +64,7 @@ defmodule Membrane.RawAudioParser.Mixfile do
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @github_url,
-        "Membrane Framework Homepage" => "https://membraneframework.org"
+        "Membrane Framework Homepage" => "https://membrane.stream/"
       }
     ]
   end
@@ -74,7 +75,7 @@ defmodule Membrane.RawAudioParser.Mixfile do
       extras: ["README.md", "LICENSE"],
       formatters: ["html"],
       source_ref: "v#{@version}",
-      nest_modules_by_prefix: [Membrane.Template]
+      nest_modules_by_prefix: [Membrane.RawAudioParser]
     ]
   end
 end
