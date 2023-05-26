@@ -1,6 +1,8 @@
 defmodule Membrane.RawAudioParser do
   @moduledoc """
   This element is responsible for parsing audio in RawAudio format.
+  The Parser ensures that output buffers have whole samples.
+  The parser doesn't ensure that in each output buffer, there will be the same number of samples.
   """
 
   use Membrane.Filter
