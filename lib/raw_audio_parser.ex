@@ -24,10 +24,11 @@ defmodule Membrane.RawAudioParser do
                 """,
                 default: false
               ],
-              offset: [
+              pts_offset: [
                 spec: non_neg_integer(),
                 description: """
                 If set to value different than 0, RawAudioParser will start timestamps from offset.
+                It's only valid when `overwrite_pts?` is set to true.
                 """,
                 default: 0
               ]
@@ -51,66 +52,41 @@ defmodule Membrane.RawAudioParser do
     state =
       options
       |> Map.from_struct()
-      |> Map.put(:next_pts, options.offset)
+      |> Map.put(:next_pts, options.pts_offset)
       |> Map.put(:acc, <<>>)
 
     {[], state}
   end
 
   @impl true
-  def handle_stream_format(
-        _pad,
-        %RemoteStream{},
-        _context,
-        %{stream_format: nil}
-      ),
-      do:
-        raise("""
+  def handle_stream_format(_pad, input_stream_format, _context, state) do
+    case {input_stream_format, state.stream_format} do
+      {%RemoteStream{}, nil} ->
+        raise """
         You need to specify `stream_format` in options if `Membrane.RemoteStream` will be received on the `:input` pad
-        """)
+        """
 
-  @impl true
-  def handle_stream_format(
-        _pad,
-        stream_format,
-        _context,
-        %{stream_format: nil} = state
-      ),
-      do: {[stream_format: {:output, stream_format}], %{state | stream_format: stream_format}}
+      {_, nil} ->
+        {[stream_format: {:output, input_stream_format}],
+         %{state | stream_format: input_stream_format}}
 
-  @impl true
-  def handle_stream_format(
-        _pad,
-        %RemoteStream{},
-        _context,
-        %{stream_format: stream_format} = state
-      ) do
-    {[stream_format: {:output, stream_format}], state}
+      {%RemoteStream{}, stream_format} ->
+        {[stream_format: {:output, stream_format}], state}
+
+      {stream_format, stream_format} ->
+        {[stream_format: {:output, stream_format}], state}
+
+      _else ->
+        raise """
+        Stream format on input pad: #{inspect(input_stream_format)} is different than the one passed in option: #{inspect(state.stream_format)}
+        """
+    end
   end
 
   @impl true
-  def handle_stream_format(
-        _pad,
-        stream_format,
-        _context,
-        %{stream_format: stream_format} = state
-      ),
-      do: {[stream_format: {:output, stream_format}], state}
+  def handle_process(_pad, buffer, _context, state) do
+    %{stream_format: stream_format, overwrite_pts?: overwrite_pts?} = state
 
-  @impl true
-  def handle_stream_format(_pad, input_stream_format, _context, %{stream_format: stream_format}),
-    do:
-      raise(
-        "Stream format on input pad: #{inspect(input_stream_format)} is different than the one passed in option: #{inspect(stream_format)}"
-      )
-
-  @impl true
-  def handle_process(
-        _pad,
-        buffer,
-        _context,
-        %{stream_format: stream_format, overwrite_pts?: overwrite_pts?} = state
-      ) do
     payload = state.acc <> buffer.payload
     sample_size = RawAudio.sample_size(stream_format) * stream_format.channels
 
@@ -129,21 +105,6 @@ defmodule Membrane.RawAudioParser do
 
       {[buffer: {:output, parsed_buffer}], state}
     end
-  end
-
-  @impl true
-  def handle_end_of_stream(_pad, _context, %{acc: <<>>} = state),
-    do: {[end_of_stream: :output], state}
-
-  @impl true
-  def handle_end_of_stream(
-        _pad,
-        _context,
-        %{acc: acc, overwrite_pts?: overwrite_pts?} = state
-      ) do
-    buffer = %Buffer{payload: acc}
-    {buffer, state} = if overwrite_pts?, do: overwrite_pts(buffer, state), else: {buffer, state}
-    {[buffer: {:output, buffer}, end_of_stream: :output], %{state | acc: <<>>}}
   end
 
   defp overwrite_pts(

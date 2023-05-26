@@ -22,6 +22,11 @@ end
 ```
 
 ## Usage
+
+In this example, two audio sources from the internet are mixed and then passed to the player in real-time.
+To link the audio source to LiveMixer each buffer has to have pts.
+Source 1 is delayed by 5 seconds from source 2.
+
 ```elixir
 defmodule Mixing.Pipeline do
   use Membrane.Pipeline
@@ -41,9 +46,24 @@ defmodule Mixing.Pipeline do
           sample_rate: 48_000
         },
         overwrite_pts?: true,
-        offset: Membrane.Time.seconds(5)
+        pts_offset: Membrane.Time.seconds(5)
       })
-      |> child(:mixer, Membrane.LiveAudioMixer)
+      |> get_child(:mixer),
+      child({:source, 2}, %Membrane.Hackney.Source{
+        location:
+          "https://raw.githubusercontent.com/membraneframework/static/gh-pages/samples/beep-s16le-48kHz-stereo.raw",
+        hackney_opts: [follow_redirect: true]
+      })
+      |> child({:parser, 2}, %Membrane.RawAudioParser{
+        stream_format: %Membrane.RawAudio{
+          channels: 2,
+          sample_format: :s16le,
+          sample_rate: 48_000
+        },
+        overwrite_pts?: true
+      })
+      |> get_child(:mixer),
+      child(:mixer, Membrane.LiveAudioMixer)
       |> child(:player, Membrane.PortAudio.Sink)
     ]
 

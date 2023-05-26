@@ -32,6 +32,7 @@ defmodule RawAudioParserTest do
     ]
 
     assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert_end_of_stream(pipeline, :sink)
 
     extended_payload = RawAudio.silence(@stream_format, div(@silence_duration, 2))
 
@@ -46,10 +47,6 @@ defmodule RawAudioParserTest do
 
     for _i <- 1..4,
         do: assert_sink_buffer(pipeline, :sink, %Buffer{pts: nil, payload: ^extended_payload})
-
-    assert_sink_buffer(pipeline, :sink, %Buffer{pts: nil, payload: <<0, 0, 0>>})
-
-    assert_end_of_stream(pipeline, :sink)
   end
 
   test "parser adds timestamps" do
@@ -62,13 +59,12 @@ defmodule RawAudioParserTest do
     ]
 
     assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert_end_of_stream(pipeline, :sink)
 
     for i <- 0..9 do
       pts = i * @silence_duration
       assert_sink_buffer(pipeline, :sink, %Buffer{pts: ^pts, payload: @silence})
     end
-
-    assert_end_of_stream(pipeline, :sink)
   end
 
   test "parser adds timestamps with offset" do
@@ -77,18 +73,17 @@ defmodule RawAudioParserTest do
 
     structure = [
       child(:source, %Source{output: buffers, stream_format: @stream_format})
-      |> child(:parser, %RawAudioParser{overwrite_pts?: true, offset: offset})
+      |> child(:parser, %RawAudioParser{overwrite_pts?: true, pts_offset: offset})
       |> child(:sink, Sink)
     ]
 
     assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert_end_of_stream(pipeline, :sink)
 
     for i <- 0..9 do
       pts = i * @silence_duration + offset
       assert_sink_buffer(pipeline, :sink, %Buffer{pts: ^pts, payload: @silence})
     end
-
-    assert_end_of_stream(pipeline, :sink)
   end
 
   test "parser can have `RemoteStream` as input" do
