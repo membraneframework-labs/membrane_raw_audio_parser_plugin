@@ -43,19 +43,7 @@ defmodule Mixing.Pipeline do
         overwrite_pts?: true,
         offset: Membrane.Time.seconds(5)
       })
-      |> child(:mixer, %Membrane.AudioMixer{synchronize_buffers?: true})
-      |> child(:converter, %Membrane.FFmpeg.SWResample.Converter{
-        input_stream_format: %Membrane.RawAudio{
-          channels: 2,
-          sample_rate: 48_000,
-          sample_format: :s16le
-        },
-        output_stream_format: %Membrane.RawAudio{
-          channels: 2,
-          sample_rate: 48_000,
-          sample_format: :s16le
-        }
-      })
+      |> child(:mixer, Membrane.LiveAudioMixer)
       |> child(:player, Membrane.PortAudio.Sink)
     ]
 
