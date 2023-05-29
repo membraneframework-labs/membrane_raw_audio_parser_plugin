@@ -66,7 +66,7 @@ defmodule Membrane.RawAudioParser do
         You need to specify `stream_format` in options if `Membrane.RemoteStream` will be received on the `:input` pad
         """
 
-      {_, nil} ->
+      {_input_format, nil} ->
         {[stream_format: {:output, input_stream_format}],
          %{state | stream_format: input_stream_format}}
 
