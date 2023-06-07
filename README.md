@@ -14,11 +14,7 @@ It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 The package can be installed by adding `membrane_raw_audio_parser_plugin ` to your list of dependencies in `mix.exs`:
 
 ```elixir
-def deps do
-  [
-    {:membrane_raw_audio_parser_plugin , "~> 0.1.0"}
-  ]
-end
+{:membrane_raw_audio_parser_plugin , "~> 0.1.0"}
 ```
 
 ## Usage
