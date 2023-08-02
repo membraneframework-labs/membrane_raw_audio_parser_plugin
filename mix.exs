@@ -40,7 +40,7 @@ defmodule Membrane.RawAudioParser.Mixfile do
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false},
-      {:membrane_raw_audio_format, "~> 0.10.0"},
+      {:membrane_raw_audio_format, "~> 0.11.0"},
       {:membrane_file_plugin, "~> 0.13.3", only: :test}
     ]
   end
