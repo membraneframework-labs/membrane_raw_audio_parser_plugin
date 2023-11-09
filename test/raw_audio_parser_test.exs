@@ -25,13 +25,13 @@ defmodule RawAudioParserTest do
 
     buffers = for _i <- 1..9, do: payload
 
-    structure = [
+    spec = [
       child(:source, %Source{output: buffers, stream_format: @stream_format})
       |> child(:parser, RawAudioParser)
       |> child(:sink, Sink)
     ]
 
-    assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert pipeline = Pipeline.start_link_supervised!(spec: spec)
     assert_end_of_stream(pipeline, :sink)
 
     extended_payload = RawAudio.silence(@stream_format, div(@silence_duration, 2))
@@ -52,13 +52,13 @@ defmodule RawAudioParserTest do
   test "parser adds timestamps" do
     buffers = Enum.map(1..10, fn _idx -> @silence end)
 
-    structure = [
+    spec = [
       child(:source, %Source{output: buffers, stream_format: @stream_format})
       |> child(:parser, %RawAudioParser{overwrite_pts?: true})
       |> child(:sink, Sink)
     ]
 
-    assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert pipeline = Pipeline.start_link_supervised!(spec: spec)
     assert_end_of_stream(pipeline, :sink)
 
     for i <- 0..9 do
@@ -71,13 +71,13 @@ defmodule RawAudioParserTest do
     offset = 10
     buffers = Enum.map(1..10, fn _idx -> @silence end)
 
-    structure = [
+    spec = [
       child(:source, %Source{output: buffers, stream_format: @stream_format})
       |> child(:parser, %RawAudioParser{overwrite_pts?: true, pts_offset: offset})
       |> child(:sink, Sink)
     ]
 
-    assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert pipeline = Pipeline.start_link_supervised!(spec: spec)
     assert_end_of_stream(pipeline, :sink)
 
     for i <- 0..9 do
@@ -87,13 +87,13 @@ defmodule RawAudioParserTest do
   end
 
   test "parser can have `RemoteStream` as input" do
-    structure = [
+    spec = [
       child(:source, %Membrane.File.Source{location: "test/fixtures/beep.raw"})
       |> child(:parser, %RawAudioParser{stream_format: @stream_format})
       |> child(:sink, Sink)
     ]
 
-    assert pipeline = Pipeline.start_link_supervised!(structure: structure)
+    assert pipeline = Pipeline.start_link_supervised!(spec: spec)
     assert_end_of_stream(pipeline, :sink)
   end
 end

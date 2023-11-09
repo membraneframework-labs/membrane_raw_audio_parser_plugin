@@ -34,7 +34,7 @@ defmodule Membrane.RawAudioParser do
               ]
 
   def_input_pad :input,
-    demand_mode: :auto,
+    flow_control: :auto,
     accepted_format:
       any_of(
         RawAudio,
@@ -43,7 +43,7 @@ defmodule Membrane.RawAudioParser do
     availability: :always
 
   def_output_pad :output,
-    demand_mode: :auto,
+    flow_control: :auto,
     availability: :always,
     accepted_format: RawAudio
 
@@ -84,7 +84,7 @@ defmodule Membrane.RawAudioParser do
   end
 
   @impl true
-  def handle_process(_pad, buffer, _context, state) do
+  def handle_buffer(_pad, buffer, _context, state) do
     %{stream_format: stream_format, overwrite_pts?: overwrite_pts?} = state
 
     payload = state.acc <> buffer.payload
