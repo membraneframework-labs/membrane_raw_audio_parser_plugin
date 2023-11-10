@@ -16,7 +16,7 @@ The package can be installed by adding `membrane_raw_audio_parser_plugin ` to yo
 ```elixir
 def deps do
   [
-	  {:membrane_raw_audio_parser_plugin, "~> 0.3.0"}
+    {:membrane_raw_audio_parser_plugin, "~> 0.4.0"}
   ]
 end
 ```
@@ -33,7 +33,7 @@ defmodule Mixing.Pipeline do
 
   @impl true
   def handle_init(_ctx, _options) do
-    structure = [
+    spec = [
       child({:source, 1}, %Membrane.Hackney.Source{
         location:
           "https://raw.githubusercontent.com/membraneframework/static/gh-pages/samples/beep-s16le-48kHz-stereo.raw",
@@ -67,7 +67,7 @@ defmodule Mixing.Pipeline do
       |> child(:player, Membrane.PortAudio.Sink)
     ]
 
-    {[spec: structure, playback: :playing], %{}}
+    {[spec: spec], %{}}
   end
 end
 ```
