@@ -67,7 +67,7 @@ defmodule Mixing.Pipeline do
       |> child(:player, Membrane.PortAudio.Sink)
     ]
 
-    {[spec: spec, playback: :playing], %{}}
+    {[spec: spec], %{}}
   end
 end
 ```
