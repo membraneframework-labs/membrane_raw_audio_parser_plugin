@@ -6,7 +6,6 @@ defmodule Membrane.RawAudioParser.Mixfile do
 
   def project do
     [
-      homepage_url: "https://membrane.stream",
       app: :membrane_raw_audio_parser_plugin,
       version: @version,
       elixir: "~> 1.13",
@@ -22,7 +21,8 @@ defmodule Membrane.RawAudioParser.Mixfile do
       # docs
       name: "Membrane RawAudioParser plugin",
       source_url: @github_url,
-      docs: docs()
+      docs: docs(),
+      homepage_url: "https://membrane.stream"
     ]
   end
 
