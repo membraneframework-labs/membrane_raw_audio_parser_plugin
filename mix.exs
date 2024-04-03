@@ -21,7 +21,8 @@ defmodule Membrane.RawAudioParser.Mixfile do
       # docs
       name: "Membrane RawAudioParser plugin",
       source_url: @github_url,
-      docs: docs()
+      docs: docs(),
+      homepage_url: "https://membrane.stream"
     ]
   end
 
